@@ -1,0 +1,149 @@
+---
+title: "Homework 3"
+author: "Valentina Trevino"
+date: "2024-01-31"
+output:
+html_document:
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(ggplot2)
+library(tidyverse)
+library(knitr)
+library(tibble)
+library(dplyr)
+library(kableExtra)
+```
+### EID: vt6738 ###
+#### Link to Github:  ####
+
+```{r, warning=FALSE, echo=FALSE, message=FALSE}
+setwd("/Users/valentinatrevino/Desktop/spring '24/SDS")
+creatinine_data <- read.csv("creatinine.csv")
+```
+
+## Problem 1 ##
+#### What creatinine clearance rate should we expect for a 55-year-old? ####
+
+```{r, warning=FALSE, echo=FALSE, message=FALSE}
+model <- lm(creatclear ~ age, data = creatinine_data)
+new_data <- data.frame(age = 55)
+prediction_55 <- predict(model, new_data)
+cat("Predicted Clearance Rate for 55 y/o:", prediction_55, "ml/minute")
+```
+
+###### Using this linear regression model, I determined the expected creatinine clearance rate for a 55-year-old. This was achieved by setting age as the independent variable and creatinine clearance as the dependent variable in the linear model. Subsequently, we utilized a data frame to isolate the expected rate for a 55-year-old. ######
+
+#### How does creatinine clearance rate change with age? ####
+```{r, warning=FALSE, echo=FALSE, message=FALSE}
+rate <- coef(model)[2]
+cat("Creatinine Clearance Rate of Change:", rate)
+```
+###### The creatinine clearance rate decreases with age. This is indicated by the coefficient of -0.6198 obtained from the linear regression model, which suggests that for each additional year of age, the creatinine clearance rate decreases by approximately 0.6198 mL/minute. ######
+
+#### Whose creatinine clearance rate is healthier (higher) for their age: a 40-year-old with a rate of 135, or a 60-year-old with a rate of 112? ####
+
+```{r, warning=FALSE, echo=FALSE, message=FALSE}
+predicted_40 <- predict(model, newdata = data.frame(age = 40))
+predicted_60 <- predict(model, newdata = data.frame(age = 60))
+cat("Predicted Clearance Rate for 40 y/o:", predicted_40, "ml/minute")
+cat("Predicted Clearance Rate for 60 y/o:", predicted_60, "ml/minute")
+
+```
+###### Considering that both observed cases have a clearance rate higher than the predicted clearance rate for their age, it follows that both individuals exhibit healthier creatinine clearance rates relative to their respective ages. ######
+
+## Problem 2 ##
+
+##### This dataset contains the percentage change in the return (Beta) of six firms. Beta represents the slope of the line when plotting a security's excess returns against the market's excess returns. If this value exceeds 1.0, it indicates higher-than-average systematic risk. In such cases, when the market rises, the firm's stock tends to rise more than the general market, and similarly, when the market declines, the stock tends to decline more. Conversely, a negative beta suggests returns lower than the risk-free rate, while a beta of zero indicates no systematic risk associated with the firm. #####
+
+```{r, warning=FALSE, echo=FALSE, message=FALSE}
+setwd("/Users/valentinatrevino/Desktop/spring '24/SDS")
+market_data <- read.csv("marketmodel.csv")
+
+names  <- names(market_data)[3:ncol(market_data)]
+models <- list()
+smry   <- list()
+
+for (name in names){
+  models[[name]] <- lm(market_data[,name] ~ SPY, data = market_data)
+  smry[[name]]   <- summary(models[[name]])
+}
+
+inter <- rep(NA, 6)
+slope <- rep(NA, 6)
+r.sq  <- rep(NA, 6)
+
+for (i in 1:length(names)){
+  inter[i] <- models[[names[i]]]$coefficients[1] 
+  slope[i] <- models[[names[i]]]$coefficients[2]
+  r.sq[i] <- smry[[names[i]]]$r.squared
+}
+
+library(kableExtra)
+stock_tibble <- tibble(`Ticker Symbol` = names, Intercept = inter, Slope = slope, `R-Squared` = r.sq)
+
+kable(stock_tibble, format = "html", align = "c", caption = "Stock Tibble") %>%
+  kable_styling(full_width = FALSE, position = "center")
+```
+
+##### On the far left of the tibble, we can observe the Ticker Symbols representing the six firms we're analyzing: Apple, Google, Merck, Johnson and Johnson, Walmart, and Target. Next, we have the Intercept followed by the Slope, which represents the Beta, and the R-Squared value, indicating how well the observed data points align with the regression line.#####
+
+##### In the table, Apple stands out as the stock with the highest systematic risk, boasting a Beta of 1.07, indicating a level of systematic risk above the average. Conversely, Walmart appears as the stock with the least systematic risk among those listed, with a Beta of 0.52. #####
+
+## Problem 3 ##
+```{r,warning=FALSE, echo=FALSE, message=FALSE}
+setwd("/Users/valentinatrevino/Desktop/spring '24/SDS")
+covid_data <- read.csv("covid.csv")
+
+#Italy Data
+italy_data <- covid_data%>%
+  filter(covid_data$country=="Italy")
+
+italy_lm <- lm(log(deaths) ~ days_since_first_death, data = italy_data)
+rate_italy <- coef(italy_lm)[2]
+rounded_italy <- round(rate_italy, 3)
+cat("Italy Estimated Growth Rate:", rounded_italy)
+
+DT_Italy <- 70/coef(italy_lm)[2]
+rounded_DT_italy <- round(DT_Italy, 0)
+cat("Italy Doubling Time:", rounded_DT_italy, "Days")
+
+
+#Spain Data
+spain_data <- covid_data%>%
+  filter(covid_data$country=="Spain")
+
+spain_lm <- lm(log(deaths) ~ days_since_first_death, data = spain_data)
+rate_spain <- coef(spain_lm)[2]
+rounded_spain <- round(rate_spain, 3)
+cat("Spain Estimated Growth Rate:", rounded_spain)
+
+DT_Spain <- 70/coef(spain_lm)[2]
+rounded_DT_spain <- round(DT_Spain, 0)
+cat("Spain Doubling Time:", rounded_DT_spain, "Days")
+
+ggplot(covid_data) + geom_line(aes(x=days_since_first_death, y = log(deaths), color = country)) +
+  labs(title = "Reported Daily Deaths Over Time", x = "Days Since First Death", y = "Deaths") + scale_x_continuous(breaks = seq(0, 40, by = 2))
+
+```
+
+## Problem 4 ##
+
+```{r,warning=FALSE, echo=FALSE, message=FALSE}
+setwd("/Users/valentinatrevino/Desktop/spring '24/SDS")
+milk_data <- read.csv("milk.csv")
+
+milk_lm = lm(log(sales) ~ log(price), data=milk_data)
+milk_demand <- coef(milk_lm)[2]
+cat("Coefficient of Demand for Milk:", milk_demand)
+ggplot(milk_data) + 
+   geom_point(aes(x=log(price), y=log(sales))) + 
+   geom_abline(intercept=4.72, slope=-1.62, color='red') + labs(title = "Elasticity of Milk Demand", x= "Price", y= "Sales")
+```
+
+##### As indicated not only by the fitted slope of -1.62 but also by the linear model I constructed, the demand for milk appears to be elastic. With a negative coefficient, the model signifies an inverse relationship between the price of milk and the quantity demanded. In simpler terms, as the price of milk rises, the quantity demanded decreases. The magnitude of the coefficient (-1.62) reveals the extent of responsiveness of quantity demanded to changes in price. Since it is bigger than 1 in absolute value, it suggests that the demand for milk is elastic. When demand for a product is elastic, consumers are highly sensitive to price changes and may opt to stop purchasing or substitute the product with alternatives if prices increase. #####
+
+
+
+
